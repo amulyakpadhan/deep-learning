@@ -85,3 +85,82 @@ best_model.fit(X_train, y_train, epochs=10, validation_split=0.2)
 # Evaluate the model on the test data
 loss, accuracy = best_model.evaluate(X_test, y_test, verbose=0)
 print(f"Test Accuracy: {accuracy:.2f}")
+
+
+
+
+
+
+
+
+
+## 2nd method
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
+import numpy as np
+
+# Load and preprocess the MNIST dataset
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+X_train = X_train.reshape(-1, 28, 28, 1).astype('float32') / 255.0
+X_test = X_test.reshape(-1, 28, 28, 1).astype('float32') / 255.0
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+
+# Define the grid of hyperparameters
+filter_options = [32, 64]
+kernel_size_options = [3, 5]
+units_options = [64, 128]
+dropout_options = [0.2, 0.3]
+optimizer_options = ['adam', 'sgd']
+
+# Iterate through all combinations of hyperparameters
+best_accuracy = 0
+best_params = {}
+
+for filters_1 in filter_options:
+    for filters_2 in filter_options:
+        for kernel_size in kernel_size_options:
+            for units in units_options:
+                for dropout in dropout_options:
+                    for optimizer in optimizer_options:
+                        print(f"Training with filters: {filters_1}, {filters_2}, kernel_size: {kernel_size}, units: {units}, dropout: {dropout}, optimizer: {optimizer}")
+                        
+                        # Define the CNN model
+                        model = Sequential([
+                            Conv2D(filters=filters_1, kernel_size=(kernel_size, kernel_size), activation='relu', input_shape=(28, 28, 1)),
+                            MaxPooling2D(pool_size=(2, 2)),
+                            Conv2D(filters=filters_2, kernel_size=(kernel_size, kernel_size), activation='relu'),
+                            MaxPooling2D(pool_size=(2, 2)),
+                            Flatten(),
+                            Dense(units=units, activation='relu'),
+                            Dropout(dropout),
+                            Dense(units=10, activation='softmax')
+                        ])
+                        
+                        # Compile the model
+                        model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+                        
+                        # Train the model
+                        model.fit(X_train, y_train, epochs=3, batch_size=32, validation_split=0.2, verbose=0)
+                        
+                        # Evaluate the model
+                        loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+                        print(f"Accuracy: {accuracy:.4f}")
+                        
+                        # Keep track of the best model
+                        if accuracy > best_accuracy:
+                            best_accuracy = accuracy
+                            best_params = {
+                                'filters_1': filters_1,
+                                'filters_2': filters_2,
+                                'kernel_size': kernel_size,
+                                'units': units,
+                                'dropout': dropout,
+                                'optimizer': optimizer
+                            }
+
+print(f"Best Hyperparameters: {best_params}")
+print(f"Best Test Accuracy: {best_accuracy:.4f}")
